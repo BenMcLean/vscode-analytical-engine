@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { AEDebugAdapter } from "./debugAdapter";
 
 const LANGUAGE_ID = "analytical-engine";
 const EMPTY_CURVE =
@@ -54,7 +55,52 @@ export function activate(context: vscode.ExtensionContext): void {
 				await createSampleProgram();
 			},
 		),
+		vscode.debug.registerDebugConfigurationProvider(
+			"analytical-engine",
+			new AEDebugConfigurationProvider(),
+		),
+		vscode.debug.registerDebugAdapterDescriptorFactory(
+			"analytical-engine",
+			new AEDebugAdapterDescriptorFactory(context),
+		),
 	);
+}
+
+class AEDebugConfigurationProvider implements vscode.DebugConfigurationProvider {
+	resolveDebugConfiguration(
+		_folder: vscode.WorkspaceFolder | undefined,
+		config: vscode.DebugConfiguration,
+	): vscode.DebugConfiguration {
+		if (!config.type && !config.request && !config.name) {
+			const editor = vscode.window.activeTextEditor;
+			if (editor && editor.document.languageId === LANGUAGE_ID) {
+				config.type = "analytical-engine";
+				config.name = "Debug Analytical Engine Program";
+				config.request = "launch";
+				config.program = editor.document.uri.toString();
+				config.stopOnEntry = true;
+			}
+		}
+		if (!config.program) {
+			const editor = vscode.window.activeTextEditor;
+			if (editor) {
+				config.program = editor.document.uri.toString();
+			}
+		}
+		return config;
+	}
+}
+
+class AEDebugAdapterDescriptorFactory
+	implements vscode.DebugAdapterDescriptorFactory
+{
+	constructor(private readonly context: vscode.ExtensionContext) {}
+
+	createDebugAdapterDescriptor(): vscode.DebugAdapterDescriptor {
+		return new vscode.DebugAdapterInlineImplementation(
+			new AEDebugAdapter(this.context),
+		);
+	}
 }
 
 export function deactivate(): void {}
