@@ -55,6 +55,11 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Automatically open the plotter panel when the debugger stops."
+				},
+				"analytical-engine.bellSound": {
+					"type": "string",
+					"default": "",
+					"description": "Path to a sound file to play when a Bell card (B) is executed. Leave empty for no sound. Not supported in the web extension. macOS: any format supported by afplay (MP3, WAV, AIFF, AAC). Windows: WAV files only. Linux: WAV files via aplay."
 				}
 			}
 		},

@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { AEDebugAdapter } from "./debugAdapter";
 import { PlotterPanel, EMPTY_SVG } from "./plotterPanel";
+import { ExecutionHooks, makeExecutionHooks } from "./engineHooks";
 
 const LANGUAGE_ID = "analytical-engine";
 
@@ -27,6 +28,7 @@ type AESession = {
 type AnalyticalEngineModule = {
 	DebuggerSession: new (options?: {
 		libraryReader?: (request: LibraryRequest) => Promise<LibraryResponse>;
+		executionHooks?: ExecutionHooks;
 	}) => AESession;
 };
 
@@ -161,7 +163,12 @@ async function runCurrentProgram(
 			cancellable: true,
 		},
 		async (_progress, token) => {
-			const session = new AE.DebuggerSession({ libraryReader: makeLibraryReader() });
+			const session = new AE.DebuggerSession({
+					libraryReader: makeLibraryReader(),
+					executionHooks: makeExecutionHooks({
+						onBell: () => output.appendLine("[Bell] Ding dong!"),
+					}),
+				});
 
 			try {
 				await session.submitProgramAsync(document.getText(), {

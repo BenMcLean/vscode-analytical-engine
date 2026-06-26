@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { ExecutionHooks, makeExecutionHooks } from "./engineHooks";
 
 // Minimal types matching analytical-engine's index.d.ts
 type LibraryRequest = {
@@ -105,6 +106,7 @@ type AEDebuggerSession = {
 type AEModule = {
 	DebuggerSession: new (options?: {
 		libraryReader?: (req: LibraryRequest) => Promise<LibraryResponse>;
+		executionHooks?: ExecutionHooks;
 	}) => AEDebuggerSession;
 };
 
@@ -261,6 +263,9 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 		const AE = await loadAEModule();
 		const session = new AE.DebuggerSession({
 			libraryReader: (req) => this.resolveLibrary(req),
+			executionHooks: makeExecutionHooks({
+				onBell: () => this.sendEvent("output", { category: "console", output: "[Bell] Ding dong!\n" }),
+			}),
 		});
 
 		const text = await this.readProgram(this.programUri);
