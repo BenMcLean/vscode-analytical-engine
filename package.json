@@ -174,7 +174,7 @@
 		"vsix": "vsce package --out analytical-engine.vsix"
 	},
 	"dependencies": {
-		"analytical-engine": "github:BenMcLean/analytical-engine"
+		"analytical-engine": "github:BenMcLean/analytical-engine#3eacb153134945aca76acd3b08f102e67873846a"
 	},
 	"devDependencies": {
 		"@types/mocha": "^10.0.10",

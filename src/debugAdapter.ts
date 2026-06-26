@@ -608,7 +608,7 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 	}
 
 	private static readonly EMPTY_SVG =
-		'<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg"></svg>';
+		'<svg viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>';
 
 	private firePlotUpdate(): void {
 		const svg = this.session?.getState().outputs.curveDrawingApparatus;
