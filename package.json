@@ -41,8 +41,23 @@
 			{
 				"command": "analytical-engine.newProgram",
 				"title": "Babbage Analytical Engine Assembly: New Sample Program"
+			},
+			{
+				"command": "analytical-engine.showPlotter",
+				"title": "Babbage Analytical Engine Assembly: Show Plotter",
+				"icon": "$(graph)"
 			}
 		],
+		"configuration": {
+			"title": "Analytical Engine",
+			"properties": {
+				"analytical-engine.plotter.autoOpen": {
+					"type": "boolean",
+					"default": true,
+					"description": "Automatically open the plotter panel when the debugger stops."
+				}
+			}
+		},
 		"languages": [
 			{
 				"id": "analytical-engine",
@@ -73,6 +88,11 @@
 			"editor/title/run": [
 				{
 					"command": "analytical-engine.runCurrentProgram",
+					"when": "resourceExtname == .ae",
+					"group": "navigation"
+				},
+				{
+					"command": "analytical-engine.showPlotter",
 					"when": "resourceExtname == .ae",
 					"group": "navigation"
 				}
@@ -112,7 +132,7 @@
 						"request": "launch",
 						"name": "Debug Analytical Engine Program",
 						"program": "${file}",
-						"stopOnEntry": true
+						"stopOnEntry": false
 					}
 				],
 				"configurationSnippets": [
@@ -124,7 +144,7 @@
 							"request": "launch",
 							"name": "${1:Debug Analytical Engine Program}",
 							"program": "^\"\\${file}\"",
-							"stopOnEntry": true
+							"stopOnEntry": false
 						}
 					}
 				]

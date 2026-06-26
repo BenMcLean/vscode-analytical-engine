@@ -117,7 +117,6 @@ type DAPMessage = {
 
 const SCOPE_MILL = 1;
 const SCOPE_STORE = 2;
-const STEP_LIMIT = 1_000_000;
 
 let aeModuleCache: Promise<AEModule> | undefined;
 
@@ -132,12 +131,17 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 	readonly onDidSendMessage: vscode.Event<vscode.DebugProtocolMessage> =
 		this._onDidSendMessage.event;
 
+	private readonly _onDidUpdatePlot = new vscode.EventEmitter<string>();
+	readonly onDidUpdatePlot: vscode.Event<string> = this._onDidUpdatePlot.event;
+
 	private seq = 0;
 	private session: AEDebuggerSession | null = null;
 	private programUri: vscode.Uri | null = null;
-	private stopOnEntry = true;
+	private stopOnEntry = false;
 	private sourceBreakpoints = new Map<string, number[]>();
 	private lastBreakpointFired: NormalizedBreakpoint | null = null;
+	private _continueRunning = false;
+	private pendingContinue = false;
 
 	constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -177,7 +181,10 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 
 			case "configurationDone":
 				this.sendResponse(req);
-				if (this.stopOnEntry) {
+				if (!this.session) {
+					// launch is still loading — remember to continue once it's ready
+					this.pendingContinue = true;
+				} else if (this.stopOnEntry) {
 					this.sendEvent("stopped", { reason: "entry", threadId: 1 });
 				} else {
 					this.doContinue();
@@ -217,14 +224,20 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 				this.doStep();
 				break;
 
-			case "pause":
-				this.session?.pause();
+			case "pause": {
+				const wasContinuing = this._continueRunning;
+				this._continueRunning = false;
 				this.sendResponse(req);
-				this.sendEvent("stopped", { reason: "pause", threadId: 1 });
+				if (!wasContinuing) {
+					this.sendEvent("stopped", { reason: "pause", threadId: 1 });
+				}
+				// If wasContinuing, the stopped event is sent by doContinueAsync
 				break;
+			}
 
 			case "disconnect":
 			case "terminate":
+				this._continueRunning = false;
 				this.sendResponse(req);
 				this.sendEvent("terminated");
 				break;
@@ -237,7 +250,7 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 
 	private async handleLaunch(req: DAPMessage): Promise<void> {
 		const args = req.arguments as { program?: string; stopOnEntry?: boolean } | undefined;
-		this.stopOnEntry = args?.stopOnEntry !== false;
+		this.stopOnEntry = !!args?.stopOnEntry;
 
 		if (!args?.program) {
 			throw new Error("No program specified in launch configuration.");
@@ -246,17 +259,32 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 		this.programUri = vscode.Uri.parse(args.program);
 
 		const AE = await loadAEModule();
-		this.session = new AE.DebuggerSession({
+		const session = new AE.DebuggerSession({
 			libraryReader: (req) => this.resolveLibrary(req),
 		});
 
 		const text = await this.readProgram(this.programUri);
-		await this.session.submitProgramAsync(text, {
+		await session.submitProgramAsync(text, {
 			sourceName: this.getSourceName(this.programUri),
 			sourceUri: this.programUri.toString(),
 		});
 
+		// Assign session only after the program is fully loaded so that
+		// configurationDone (which may arrive before the launch response) cannot
+		// call resume() on an empty card reader.
+		this.session = session;
+		this.syncBreakpoints();
+
 		this.sendResponse(req);
+
+		if (this.pendingContinue) {
+			this.pendingContinue = false;
+			if (this.stopOnEntry) {
+				this.sendEvent("stopped", { reason: "entry", threadId: 1 });
+			} else {
+				this.doContinue();
+			}
+		}
 	}
 
 	private async readProgram(uri: vscode.Uri): Promise<string> {
@@ -407,14 +435,68 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 		this.sendResponse(req, { variables: vars });
 	}
 
+	private readonly INNER_CHUNK = 200;
+	private readonly SLICE_MS = 16;
+
 	private doContinue(): void {
+		this.doContinueAsync().catch((error) => {
+			const msg = error instanceof Error ? error.message : String(error);
+			this.sendEvent("output", { category: "stderr", output: `[Engine error] ${msg}\n` });
+			this.sendEvent("terminated");
+		});
+	}
+
+	private async doContinueAsync(): Promise<void> {
 		if (!this.session) {
 			return;
 		}
-		this.skipLastBreakpointOnce(() => {
-			const result = this.session!.resume(STEP_LIMIT);
-			this.handleRunResult(result, result.steps >= STEP_LIMIT);
-		});
+
+		const bp = this.lastBreakpointFired;
+		this.lastBreakpointFired = null;
+		if (bp) {
+			this.session.removeBreakpoint(bp.id);
+		}
+
+		this._continueRunning = true;
+		try {
+			while (this._continueRunning) {
+				const deadline = Date.now() + this.SLICE_MS;
+
+				// Run INNER_CHUNK cards at a time until the time slice expires
+				while (this._continueRunning) {
+					const result = this.session.resume(this.INNER_CHUNK);
+					const stopReason = result.state.engine?.lastStopReason;
+
+					if (stopReason !== null || result.steps < this.INNER_CHUNK) {
+						this._continueRunning = false;
+						this.handleRunResult(result);
+						return;
+					}
+
+					if (Date.now() >= deadline) {
+						break;
+					}
+				}
+
+				// Yield between slices so VS Code can process pause/disconnect
+				await new Promise<void>((resolve) => setTimeout(resolve, 0));
+			}
+
+			// _continueRunning was set to false by a pause request
+			this.sendEvent("stopped", { reason: "pause", threadId: 1 });
+		} finally {
+			this._continueRunning = false;
+			if (bp && this.session) {
+				this.session.addBreakpoint({
+					sourceUri: bp.sourceUri,
+					sourceName: bp.sourceName,
+					sourceLine: bp.sourceLine,
+					cardIndex: bp.cardIndex,
+					text: bp.text,
+					enabled: bp.enabled,
+				});
+			}
+		}
 	}
 
 	private doStep(): void {
@@ -459,17 +541,13 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 		}
 	}
 
-	private handleRunResult(result: RunUntilPauseResult, hitLimit: boolean): void {
-		if (hitLimit) {
-			this.sendEvent("stopped", { reason: "step", threadId: 1 });
-			return;
-		}
-
+	private handleRunResult(result: RunUntilPauseResult): void {
 		const stopReason = result.state.engine?.lastStopReason;
+		const errorDetected = result.state.engine?.errorDetected;
 
 		if (stopReason === "completed" || stopReason === "halt" || stopReason === "hcf") {
 			this.sendEvent("terminated");
-		} else if (stopReason === "error") {
+		} else if (stopReason === "error" || errorDetected) {
 			this.sendEvent("stopped", { reason: "exception", threadId: 1 });
 		} else if (stopReason === "breakpoint") {
 			this.trackBreakpointFired(result.event);
@@ -513,6 +591,9 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 	}
 
 	private sendEvent(event: string, body?: object): void {
+		if (event === "stopped" || event === "terminated") {
+			this.firePlotUpdate();
+		}
 		this._onDidSendMessage.fire({
 			type: "event",
 			seq: ++this.seq,
@@ -521,8 +602,19 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 		} as vscode.DebugProtocolMessage);
 	}
 
+	private static readonly EMPTY_SVG =
+		'<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg"></svg>';
+
+	private firePlotUpdate(): void {
+		const svg = this.session?.getState().outputs.curveDrawingApparatus;
+		if (svg && svg !== AEDebugAdapter.EMPTY_SVG) {
+			this._onDidUpdatePlot.fire(svg);
+		}
+	}
+
 	dispose(): void {
 		this._onDidSendMessage.dispose();
+		this._onDidUpdatePlot.dispose();
 	}
 }
 

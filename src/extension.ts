@@ -1,9 +1,8 @@
 import * as vscode from "vscode";
 import { AEDebugAdapter } from "./debugAdapter";
+import { PlotterPanel, EMPTY_SVG } from "./plotterPanel";
 
 const LANGUAGE_ID = "analytical-engine";
-const EMPTY_CURVE =
-	'<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg"></svg>';
 
 type LibraryRequest = {
 	kind: "system" | "user";
@@ -12,28 +11,23 @@ type LibraryRequest = {
 	sourceUri?: string;
 };
 
+type LibraryResponse = { text: string; sourceName?: string; sourceUri?: string };
+
+type RunResult = {
+	steps: number;
+	state: { engine: { lastStopReason: string | null } };
+};
+
+type AESession = {
+	submitProgramAsync(cards: string, options?: { sourceName?: string; sourceUri?: string }): Promise<number>;
+	resume(limit: number): RunResult;
+	getState(): { outputs: { attendantLog: string; printer: string; curveDrawingApparatus: string } };
+};
+
 type AnalyticalEngineModule = {
-	Interface: new (options?: {
-		libraryReader?: (request: LibraryRequest) => Promise<{
-			text: string;
-			sourceName?: string;
-			sourceUri?: string;
-		}>;
-	}) => {
-		submitProgramAsync(
-			cards: string,
-			options?: {
-				sourceName?: string;
-				sourceUri?: string;
-			},
-		): Promise<number>;
-		runToCompletion(): void;
-		getOutputs(): {
-			attendantLog: string;
-			printer: string;
-			curveDrawingApparatus: string;
-		};
-	};
+	DebuggerSession: new (options?: {
+		libraryReader?: (request: LibraryRequest) => Promise<LibraryResponse>;
+	}) => AESession;
 };
 
 let analyticalEngineModulePromise: Promise<AnalyticalEngineModule> | undefined;
@@ -41,12 +35,13 @@ let analyticalEngineModulePromise: Promise<AnalyticalEngineModule> | undefined;
 export function activate(context: vscode.ExtensionContext): void {
 	const output = vscode.window.createOutputChannel("Analytical Engine");
 
-	context.subscriptions.push(output);
+	const plotter = new PlotterPanel(context);
+	context.subscriptions.push(output, plotter);
 	context.subscriptions.push(
 		vscode.commands.registerCommand(
 			"analytical-engine.runCurrentProgram",
 			async () => {
-				await runCurrentProgram(context, output);
+				await runCurrentProgram(context, output, plotter);
 			},
 		),
 		vscode.commands.registerCommand(
@@ -61,7 +56,7 @@ export function activate(context: vscode.ExtensionContext): void {
 		),
 		vscode.debug.registerDebugAdapterDescriptorFactory(
 			"analytical-engine",
-			new AEDebugAdapterDescriptorFactory(context),
+			new AEDebugAdapterDescriptorFactory(context, plotter),
 		),
 	);
 }
@@ -78,7 +73,7 @@ class AEDebugConfigurationProvider implements vscode.DebugConfigurationProvider 
 				config.name = "Debug Analytical Engine Program";
 				config.request = "launch";
 				config.program = editor.document.uri.toString();
-				config.stopOnEntry = true;
+				config.stopOnEntry = false;
 			}
 		}
 		if (!config.program) {
@@ -94,12 +89,16 @@ class AEDebugConfigurationProvider implements vscode.DebugConfigurationProvider 
 class AEDebugAdapterDescriptorFactory
 	implements vscode.DebugAdapterDescriptorFactory
 {
-	constructor(private readonly context: vscode.ExtensionContext) {}
+	constructor(
+		private readonly context: vscode.ExtensionContext,
+		private readonly plotter: PlotterPanel,
+	) {}
 
 	createDebugAdapterDescriptor(): vscode.DebugAdapterDescriptor {
-		return new vscode.DebugAdapterInlineImplementation(
-			new AEDebugAdapter(this.context),
-		);
+		this.plotter.reset();
+		const adapter = new AEDebugAdapter(this.context);
+		adapter.onDidUpdatePlot((svg) => this.plotter.update(svg));
+		return new vscode.DebugAdapterInlineImplementation(adapter);
 	}
 }
 
@@ -108,6 +107,7 @@ export function deactivate(): void {}
 async function runCurrentProgram(
 	context: vscode.ExtensionContext,
 	output: vscode.OutputChannel,
+	plotter: PlotterPanel,
 ): Promise<void> {
 	output.clear();
 	output.show(true);
@@ -130,73 +130,96 @@ async function runCurrentProgram(
 		}
 	}
 
+	plotter.reset();
 	const AE = await getAnalyticalEngine();
-	const engine = new AE.Interface({
-		libraryReader: async (request: LibraryRequest) => {
-			const resolvedLibraryPath = getLibraryPath(request);
-			const uri =
-				request.kind === "system"
-					? vscode.Uri.joinPath(
-							context.extensionUri,
-							"dist",
-							"analytical-engine",
-							resolvedLibraryPath,
-						)
-					: resolveUserLibraryUri(request, resolvedLibraryPath);
-			const contents = await vscode.workspace.fs.readFile(uri);
-			return {
-				text: new TextDecoder().decode(contents),
-				sourceName: `${request.name} [Library]`,
-				sourceUri: uri.toString(),
-			};
+
+	const makeLibraryReader = () => async (request: LibraryRequest): Promise<LibraryResponse> => {
+		const resolvedLibraryPath = getLibraryPath(request);
+		const uri =
+			request.kind === "system"
+				? vscode.Uri.joinPath(
+						context.extensionUri,
+						"dist",
+						"analytical-engine",
+						resolvedLibraryPath,
+					)
+				: resolveUserLibraryUri(request, resolvedLibraryPath);
+		const contents = await vscode.workspace.fs.readFile(uri);
+		return {
+			text: new TextDecoder().decode(contents),
+			sourceName: `${request.name} [Library]`,
+			sourceUri: uri.toString(),
+		};
+	};
+
+	const label = getDocumentLabel(document);
+
+	await vscode.window.withProgress(
+		{
+			location: vscode.ProgressLocation.Notification,
+			title: `Running: ${label}`,
+			cancellable: true,
 		},
-	});
+		async (_progress, token) => {
+			const session = new AE.DebuggerSession({ libraryReader: makeLibraryReader() });
 
-	try {
-		await engine.submitProgramAsync(document.getText(), {
-			sourceName: getDocumentLabel(document),
-			sourceUri: document.uri.toString(),
-		});
-		engine.runToCompletion();
-		const outputs = engine.getOutputs();
+			try {
+				await session.submitProgramAsync(document.getText(), {
+					sourceName: label,
+					sourceUri: document.uri.toString(),
+				});
 
-		output.appendLine(`Program: ${getDocumentLabel(document)}`);
-		output.appendLine("");
-		output.appendLine("[Attendant Log]");
-		output.appendLine(outputs.attendantLog.trim() || "(empty)");
-		output.appendLine("");
-		output.appendLine("[Printer]");
-		output.appendLine(outputs.printer.trim() || "(empty)");
+				const INNER_CHUNK = 200;
+				const SLICE_MS = 16;
+				let done = false;
 
-		if (outputs.curveDrawingApparatus !== EMPTY_CURVE) {
-			const svgDocument = await vscode.workspace.openTextDocument({
-				language: "svg",
-				content: outputs.curveDrawingApparatus,
-			});
-			await vscode.window.showTextDocument(
-				svgDocument,
-				vscode.ViewColumn.Beside,
-				true,
-			);
-		}
+				token.onCancellationRequested(() => { done = true; });
 
-		void vscode.window.showInformationMessage(
-			"Analytical Engine program finished.",
-		);
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		output.appendLine("");
-		output.appendLine("[Runtime Error]");
-		output.appendLine(message);
-		output.show(true);
-		void vscode.window.showErrorMessage(
-			`Analytical Engine run failed: ${message}`,
-		);
-	}
+				while (!done) {
+					const deadline = Date.now() + SLICE_MS;
+					while (!done) {
+						const result = session.resume(INNER_CHUNK);
+						const stopReason = result.state.engine?.lastStopReason;
+						if (stopReason !== null || result.steps < INNER_CHUNK) {
+							done = true;
+							break;
+						}
+						if (Date.now() >= deadline) { break; }
+					}
+					await new Promise<void>((resolve) => setTimeout(resolve, 0));
+				}
+
+				const outputs = session.getState().outputs;
+
+				output.appendLine(`Program: ${label}`);
+				output.appendLine("");
+				output.appendLine("[Attendant Log]");
+				output.appendLine(outputs.attendantLog.trim() || "(empty)");
+				output.appendLine("");
+				output.appendLine("[Printer]");
+				output.appendLine(outputs.printer.trim() || "(empty)");
+
+				if (outputs.curveDrawingApparatus !== EMPTY_SVG) {
+					plotter.update(outputs.curveDrawingApparatus);
+				}
+
+				if (!token.isCancellationRequested) {
+					void vscode.window.showInformationMessage("Analytical Engine program finished.");
+				}
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				output.appendLine("");
+				output.appendLine("[Runtime Error]");
+				output.appendLine(message);
+				output.show(true);
+				void vscode.window.showErrorMessage(`Analytical Engine run failed: ${message}`);
+			}
+		},
+	);
 }
 
 async function getAnalyticalEngine(): Promise<AnalyticalEngineModule> {
-	analyticalEngineModulePromise ??= import("analytical-engine");
+	analyticalEngineModulePromise ??= import("analytical-engine") as Promise<unknown> as Promise<AnalyticalEngineModule>;
 	return analyticalEngineModulePromise;
 }
 
