@@ -1,0 +1,38 @@
+{
+	"Include local file": {
+		"prefix": "local",
+		"body": "A include cards ${1:filename}",
+	},
+	"Include standard library": {
+		"prefix": "library",
+		"body": "A include from library cards for ${1:libname}",
+	},
+	"Decimal place expansion": {
+		"prefix": "dec",
+		"body": "A set decimal places to ${1:n}",
+	},
+	"Write picture": {
+		"prefix": "writep",
+		"body": "A write numbers as ${1:picture}",
+	},
+	"Write decimal": {
+		"prefix": "writed",
+		"body": "A write numbers with decimal point",
+	},
+	"Write rows": {
+		"prefix": "writerow",
+		"body": "A write in rows",
+	},
+	"Write columns": {
+		"prefix": "writecol",
+		"body": "A write in columns",
+	},
+	"Write annotation": {
+		"prefix": "annotation",
+		"body": "A write annotation ${1:annotation}",
+	},
+	"Write new line": {
+		"prefix": "newline",
+		"body": "A write new line",
+	},
+}

@@ -1,0 +1,119 @@
+{
+	"name": "vscode-analytical-engine",
+	"displayName": "Babbage Analytical Engine Assembly",
+	"description": "Modern Visual Studio Code tooling for Babbage Analytical Engine assembly.",
+	"version": "0.0.1",
+	"publisher": "benmclean",
+	"license": "MIT",
+	"private": true,
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/BenMcLean/vscode-analytical-engine.git"
+	},
+	"engines": {
+		"vscode": "^1.125.0"
+	},
+	"categories": [
+		"Programming Languages",
+		"Debuggers",
+		"Other"
+	],
+	"keywords": [
+		"analytical-engine",
+		"babbage",
+		"assembly",
+		"victorian-computing"
+	],
+	"activationEvents": [
+		"onLanguage:analytical-engine",
+		"onCommand:analytical-engine.runCurrentProgram",
+		"onCommand:analytical-engine.newProgram"
+	],
+	"main": "./dist/node/extension.js",
+	"browser": "./dist/web/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "analytical-engine.runCurrentProgram",
+				"title": "Babbage Analytical Engine Assembly: Run Current Program"
+			},
+			{
+				"command": "analytical-engine.newProgram",
+				"title": "Babbage Analytical Engine Assembly: New Sample Program"
+			}
+		],
+		"languages": [
+			{
+				"id": "analytical-engine",
+				"aliases": [
+					"Analytical Engine",
+					"analytical-engine"
+				],
+				"extensions": [
+					".ae"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "analytical-engine",
+				"scopeName": "source.analytical-engine",
+				"path": "./syntaxes/analytical-engine.tmLanguage.json"
+			}
+		],
+		"snippets": [
+			{
+				"language": "analytical-engine",
+				"path": "./snippets/analytical-engine.code-snippets"
+			}
+		],
+		"menus": {
+			"editor/title/run": [
+				{
+					"command": "analytical-engine.runCurrentProgram",
+					"when": "resourceExtname == .ae",
+					"group": "navigation"
+				}
+			]
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run package",
+		"compile": "npm run check-types && npm run lint && node esbuild.js && node scripts/copy-analytical-engine-library.js",
+		"watch": "npm-run-all -p watch:*",
+		"watch:esbuild": "node esbuild.js --watch",
+		"watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+		"package": "npm run check-types && npm run lint && node esbuild.js --production && node scripts/copy-analytical-engine-library.js",
+		"compile-tests": "tsc -p . --outDir out",
+		"watch-tests": "tsc -p . -w --outDir out",
+		"pretest": "npm run compile-tests && npm run compile && npm run lint",
+		"check-types": "tsc --noEmit",
+		"lint": "eslint src",
+		"test": "vscode-test",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"vsix": "vsce package --out analytical-engine.vsix"
+	},
+	"dependencies": {
+		"analytical-engine": "github:BenMcLean/analytical-engine"
+	},
+	"devDependencies": {
+		"@types/mocha": "^10.0.10",
+		"@types/node": "24.x",
+		"@types/vscode": "^1.125.0",
+		"@vscode/test-cli": "^0.0.15",
+		"@vscode/test-electron": "^3.0.0",
+		"@vscode/vsce": "^3.6.2",
+		"esbuild": "^0.28.1",
+		"eslint": "^10.5.0",
+		"npm-run-all": "^4.1.5",
+		"prettier": "^3.5.3",
+		"typescript": "^6.0.3",
+		"typescript-eslint": "^8.61.1"
+	},
+	"overrides": {
+		"diff": "^8.0.4",
+		"serialize-javascript": "^7.0.6"
+	}
+}

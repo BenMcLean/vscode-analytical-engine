@@ -1,0 +1,155 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Analytical Engine",
+	"scopeName": "source.analytical-engine",
+	"patterns": [
+		{
+			"name": "keyword.control.analytical-engine",
+			"match": "^(\\(\\??|\\{\\??|\\}\\{|\\)|\\})"
+		},
+		{
+			"name": "comment.line.analytical-engine",
+			"match": "^(\\s+|\\.).*$"
+		},
+		{
+			"match": "^(\\+|\\-|\\u2212|\\/|\\u00f7|\\*|\\u00d7|\\<|\\>|DX|DY|D\\+|D-|P|B)\\s(.*)$",
+			"captures": {
+				"1": {
+					"name": "keyword.operator.analytical-engine"
+				},
+				"2": {
+					"name": "comment.line.analytical-engine"
+				}
+			}
+		},
+		{
+			"match": "^(H)\\s(.*)$",
+			"captures": {
+				"1": {
+					"name": "keyword.operator.analytical-engine"
+				},
+				"2": {
+					"name": "constant.character.analytical-engine"
+				}
+			}
+		},
+		{
+			"match": "^(N)(\\d+)\\s+(-?\\d+)\\s(.*)$",
+			"captures": {
+				"1": {
+					"name": "keyword.operator.analytical-engine"
+				},
+				"2": {
+					"name": "variable.parameter.analytical-engine"
+				},
+				"3": {
+					"name": "constant.numeric.analytical-engine"
+				},
+				"4": {
+					"name": "comment.line.analytical-engine"
+				}
+			}
+		},
+		{
+			"match": "^(N)(\\d+)\\s+(-?\\d+\\.\\d+)\\s(.*)$",
+			"captures": {
+				"1": {
+					"name": "keyword.operator.analytical-engine"
+				},
+				"2": {
+					"name": "variable.parameter.analytical-engine"
+				},
+				"3": {
+					"name": "constant.numeric.float.analytical-engine"
+				},
+				"4": {
+					"name": "comment.line.analytical-engine"
+				}
+			}
+		},
+		{
+			"match": "^(S|Z|L|C(F|B)\\??|\\<|\\>)(\\d+'?)\\s(.*)$",
+			"captures": {
+				"1": {
+					"name": "keyword.operator.analytical-engine"
+				},
+				"3": {
+					"name": "variable.parameter.analytical-engine"
+				},
+				"4": {
+					"name": "comment.line.analytical-engine"
+				}
+			}
+		},
+		{
+			"match": "^(A write annotation )(.*)",
+			"captures": {
+				"1": {
+					"name": "keyword.operator.analytical-engine"
+				},
+				"2": {
+					"name": "constant.character.analytical-engine"
+				}
+			}
+		},
+		{
+			"match": "^(A set decimal places to )([\\+\\-]?\\d+)",
+			"captures": {
+				"1": {
+					"name": "keyword.operator.analytical-engine"
+				},
+				"2": {
+					"name": "constant.numeric.analytical-engine"
+				}
+			}
+		},
+		{
+			"match": "^(A write numbers as )(.*)",
+			"captures": {
+				"1": {
+					"name": "keyword.operator.analytical-engine"
+				},
+				"2": {
+					"name": "constant.character.analytical-engine"
+				}
+			}
+		},
+		{
+			"match": "^(A include cards )(.*)",
+			"captures": {
+				"1": {
+					"name": "keyword.operator.analytical-engine"
+				},
+				"2": {
+					"name": "string.unquoted.analytical-engine"
+				}
+			}
+		},
+		{
+			"match": "^(A include from library cards for )(.*)",
+			"captures": {
+				"1": {
+					"name": "keyword.operator.analytical-engine"
+				},
+				"2": {
+					"name": "support.function.analytical-engine"
+				}
+			}
+		},
+		{
+			"name": "keyword.operator.analytical-engine",
+			"match": "^(A .*)"
+		},
+		{
+			"match": "^(DC) (\\S*)",
+			"captures": {
+				"1": {
+					"name": "keyword.operator.analytical-engine"
+				},
+				"2": {
+					"name": "constant.character.analytical-engine"
+				}
+			}
+		}
+	]
+}

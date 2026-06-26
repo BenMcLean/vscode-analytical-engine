@@ -1,0 +1,33 @@
+name: Package VSIX
+
+on:
+  push:
+    branches:
+      - release
+  workflow_dispatch:
+
+jobs:
+  vsix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build extension
+        run: npm run package
+
+      - name: Package VSIX
+        run: npx @vscode/vsce package --out analytical-engine.vsix
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: analytical-engine-vsix
+          path: analytical-engine.vsix

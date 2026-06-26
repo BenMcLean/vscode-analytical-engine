@@ -1,0 +1,94 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Diagnostic reports
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage and test output
+coverage
+*.lcov
+.nyc_output
+.vscode-test/
+
+# Dependency directories
+node_modules/
+bower_components/
+jspm_packages/
+web_modules/
+
+# Build output
+dist/
+out/
+build/
+build/Release
+.webpack/
+.svelte-kit
+.next
+.nuxt
+.vuepress/dist
+.docusaurus
+.serverless/
+
+# Tool caches
+*.tsbuildinfo
+.npm
+.eslintcache
+.stylelintcache
+.cache
+.parcel-cache
+.temp
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+.fusebox/
+.grunt
+
+# Package manager files
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.yarn-integrity
+.pnp.*
+
+# Environment files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# REPL / misc
+.node_repl_history
+.tern-port
+*.tgz
+
+# Editor / IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.history/
+.ionide
+
+# Extension artifacts
+*.vsix
+
+# Project-local context
+.local-context/
+.agents/
