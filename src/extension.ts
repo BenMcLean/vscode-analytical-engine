@@ -55,6 +55,7 @@ export function activate(context: vscode.ExtensionContext): void {
 		vscode.debug.registerDebugConfigurationProvider(
 			"analytical-engine",
 			new AEDebugConfigurationProvider(),
+			vscode.DebugConfigurationProviderTriggerKind.Dynamic,
 		),
 		vscode.debug.registerDebugAdapterDescriptorFactory(
 			"analytical-engine",
@@ -64,6 +65,15 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 class AEDebugConfigurationProvider implements vscode.DebugConfigurationProvider {
+	provideDebugConfigurations(): vscode.DebugConfiguration[] {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor || editor.document.languageId !== LANGUAGE_ID) {
+			return [];
+		}
+
+		return [this.createLaunchConfiguration(editor.document.uri)];
+	}
+
 	resolveDebugConfiguration(
 		_folder: vscode.WorkspaceFolder | undefined,
 		config: vscode.DebugConfiguration,
@@ -71,11 +81,7 @@ class AEDebugConfigurationProvider implements vscode.DebugConfigurationProvider 
 		if (!config.type && !config.request && !config.name) {
 			const editor = vscode.window.activeTextEditor;
 			if (editor && editor.document.languageId === LANGUAGE_ID) {
-				config.type = "analytical-engine";
-				config.name = "Debug Analytical Engine Program";
-				config.request = "launch";
-				config.program = editor.document.uri.toString();
-				config.stopOnEntry = false;
+				config = this.createLaunchConfiguration(editor.document.uri);
 			}
 		}
 		if (!config.program) {
@@ -85,6 +91,16 @@ class AEDebugConfigurationProvider implements vscode.DebugConfigurationProvider 
 			}
 		}
 		return config;
+	}
+
+	private createLaunchConfiguration(programUri: vscode.Uri): vscode.DebugConfiguration {
+		return {
+			type: "analytical-engine",
+			name: "Debug Analytical Engine Program",
+			request: "launch",
+			program: programUri.toString(),
+			stopOnEntry: false,
+		};
 	}
 }
 
