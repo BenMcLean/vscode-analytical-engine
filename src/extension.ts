@@ -63,6 +63,9 @@ async function runCurrentProgram(
 	context: vscode.ExtensionContext,
 	output: vscode.OutputChannel,
 ): Promise<void> {
+	output.clear();
+	output.show(true);
+
 	const document = getRunnableDocument();
 	if (!document) {
 		void vscode.window.showWarningMessage(
@@ -84,15 +87,16 @@ async function runCurrentProgram(
 	const AE = await getAnalyticalEngine();
 	const engine = new AE.Interface({
 		libraryReader: async (request: LibraryRequest) => {
+			const resolvedLibraryPath = getLibraryPath(request);
 			const uri =
 				request.kind === "system"
 					? vscode.Uri.joinPath(
 							context.extensionUri,
 							"dist",
 							"analytical-engine",
-							request.path,
+							resolvedLibraryPath,
 						)
-					: resolveUserLibraryUri(request);
+					: resolveUserLibraryUri(request, resolvedLibraryPath);
 			const contents = await vscode.workspace.fs.readFile(uri);
 			return {
 				text: new TextDecoder().decode(contents),
@@ -110,8 +114,6 @@ async function runCurrentProgram(
 		engine.runToCompletion();
 		const outputs = engine.getOutputs();
 
-		output.clear();
-		output.show(true);
 		output.appendLine(`Program: ${getDocumentLabel(document)}`);
 		output.appendLine("");
 		output.appendLine("[Attendant Log]");
@@ -176,7 +178,26 @@ function getDocumentLabel(document: vscode.TextDocument): string {
 	return vscode.workspace.asRelativePath(document.uri, false);
 }
 
-function resolveUserLibraryUri(request: LibraryRequest): vscode.Uri {
+function getLibraryPath(request: LibraryRequest): string {
+	if (request.path) {
+		return request.path;
+	}
+
+	if (!request.name) {
+		throw new Error(
+			`Library request is missing both "path" and "name" (${JSON.stringify(request)}).`,
+		);
+	}
+
+	return request.kind === "system"
+		? `Library/${request.name}.ae`
+		: `${request.name}.ae`;
+}
+
+function resolveUserLibraryUri(
+	request: LibraryRequest,
+	resolvedLibraryPath: string,
+): vscode.Uri {
 	if (!request.sourceUri) {
 		throw new Error(
 			"Cannot resolve a relative include without a source URI.",
@@ -194,7 +215,7 @@ function resolveUserLibraryUri(request: LibraryRequest): vscode.Uri {
 	const parentPath =
 		lastSlash >= 0 ? importer.path.slice(0, lastSlash + 1) : "/";
 	const parent = importer.with({ path: parentPath });
-	return vscode.Uri.joinPath(parent, request.path);
+	return vscode.Uri.joinPath(parent, resolvedLibraryPath);
 }
 
 async function createSampleProgram(): Promise<void> {

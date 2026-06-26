@@ -1,11 +1,15 @@
 {
 	"files.exclude": {
 		"out": false,
-		"dist": false
+		"dist": false,
+		".local-context": true,
+		".agents": true
 	},
 	"search.exclude": {
 		"out": true,
-		"dist": true
+		"dist": true,
+		".local-context": true,
+		".agents": true
 	},
 	"js/ts.tsc.autoDetect": "off",
 	"editor.insertSpaces": false,

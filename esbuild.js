@@ -31,14 +31,15 @@ const esbuildProblemMatcherPlugin = {
 async function createContext(platform, outfile) {
 	return esbuild.context({
 		absWorkingDir: __dirname,
-		entryPoints: [path.join(__dirname, "src", "extension.ts")],
+		entryPoints: ["src/extension.ts"],
 		bundle: true,
 		format: "cjs",
 		minify: production,
 		sourcemap: !production,
 		sourcesContent: false,
+		tsconfig: path.join(__dirname, "tsconfig.json"),
 		platform,
-		outfile,
+		outfile: path.join(__dirname, outfile),
 		external: ["vscode"],
 		logLevel: "silent",
 		plugins: [esbuildProblemMatcherPlugin],
