@@ -27,6 +27,7 @@
 	"activationEvents": [
 		"onLanguage:analytical-engine",
 		"onCommand:analytical-engine.runCurrentProgram",
+		"onCommand:analytical-engine.debugCurrentProgram",
 		"onCommand:analytical-engine.newProgram",
 		"onDebug"
 	],
@@ -36,7 +37,13 @@
 		"commands": [
 			{
 				"command": "analytical-engine.runCurrentProgram",
-				"title": "Babbage Analytical Engine Assembly: Run Current Program"
+				"title": "Babbage Analytical Engine Assembly: Run Current Program",
+				"icon": "$(run-compact)"
+			},
+			{
+				"command": "analytical-engine.debugCurrentProgram",
+				"title": "Babbage Analytical Engine Assembly: Debug Current Program",
+				"icon": "$(debug)"
 			},
 			{
 				"command": "analytical-engine.newProgram",
@@ -94,7 +101,17 @@
 				{
 					"command": "analytical-engine.showPlotter",
 					"when": "resourceExtname == .ae",
-					"group": "navigation"
+					"group": "navigation@1"
+				},
+				{
+					"command": "analytical-engine.runCurrentProgram",
+					"when": "resourceExtname == .ae",
+					"group": "navigation@2"
+				},
+				{
+					"command": "analytical-engine.debugCurrentProgram",
+					"when": "resourceExtname == .ae",
+					"group": "navigation@3"
 				}
 			]
 		},

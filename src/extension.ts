@@ -47,6 +47,12 @@ export function activate(context: vscode.ExtensionContext): void {
 			},
 		),
 		vscode.commands.registerCommand(
+			"analytical-engine.debugCurrentProgram",
+			async () => {
+				await debugCurrentProgram();
+			},
+		),
+		vscode.commands.registerCommand(
 			"analytical-engine.newProgram",
 			async () => {
 				await createSampleProgram();
@@ -246,6 +252,23 @@ async function runCurrentProgram(
 async function getAnalyticalEngine(): Promise<AnalyticalEngineModule> {
 	analyticalEngineModulePromise ??= import("analytical-engine") as Promise<unknown> as Promise<AnalyticalEngineModule>;
 	return analyticalEngineModulePromise;
+}
+
+async function debugCurrentProgram(): Promise<void> {
+	const document = getRunnableDocument();
+	if (!document) {
+		void vscode.window.showWarningMessage(
+			"Open an .ae file or an Analytical Engine document to debug it.",
+		);
+		return;
+	}
+
+	await vscode.debug.startDebugging(undefined, {
+		type: "analytical-engine",
+		request: "launch",
+		name: "Debug Analytical Engine Program",
+		program: document.uri.toString(),
+	});
 }
 
 function getRunnableDocument(): vscode.TextDocument | undefined {
