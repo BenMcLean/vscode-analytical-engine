@@ -1,9 +1,10 @@
 {
 	"name": "vscode-analytical-engine",
 	"displayName": "Babbage Analytical Engine Assembly",
-	"description": "Modern Visual Studio Code tooling for Babbage Analytical Engine assembly.",
+	"description": "Visual Studio Code tooling for Babbage Analytical Engine assembly.",
 	"version": "0.0.1",
 	"publisher": "benmclean",
+	"icon": "icon.png",
 	"license": "MIT",
 	"private": true,
 	"repository": {
