@@ -16,7 +16,7 @@ const esbuildProblemMatcherPlugin = {
 		});
 		build.onEnd((result) => {
 			result.errors.forEach(({ text, location }) => {
-				console.error(`✘ [ERROR] ${text}`);
+				console.error(`x [ERROR] ${text}`);
 				if (location) {
 					console.error(
 						`    ${location.file}:${location.line}:${location.column}:`,
@@ -31,7 +31,7 @@ const esbuildProblemMatcherPlugin = {
 async function createContext(platform, outfile) {
 	return esbuild.context({
 		absWorkingDir: __dirname,
-		entryPoints: ["src/extension.ts"],
+		entryPoints: [path.join(__dirname, "src", "extension.ts")],
 		bundle: true,
 		format: "cjs",
 		minify: production,

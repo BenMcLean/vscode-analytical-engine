@@ -8,11 +8,7 @@
 			"match": "^(\\(\\??|\\{\\??|\\}\\{|\\)|\\})"
 		},
 		{
-			"name": "comment.line.analytical-engine",
-			"match": "^(\\s+|\\.).*$"
-		},
-		{
-			"match": "^(\\+|\\-|\\u2212|\\/|\\u00f7|\\*|\\u00d7|\\<|\\>|DX|DY|D\\+|D-|P|B)\\s(.*)$",
+			"match": "^(\\+|\\-|\\u2212|\\/|\\u00f7|\\*|\\u00d7|\\<|\\>|DX|DY|D\\+|D-|P|B)(?:\\s+(.*))?$",
 			"captures": {
 				"1": {
 					"name": "keyword.operator.analytical-engine"
@@ -23,7 +19,7 @@
 			}
 		},
 		{
-			"match": "^(H)\\s(.*)$",
+			"match": "^(H)(?:\\s+(.*))?$",
 			"captures": {
 				"1": {
 					"name": "keyword.operator.analytical-engine"
@@ -34,7 +30,7 @@
 			}
 		},
 		{
-			"match": "^(N)(\\d+)\\s+(-?\\d+)\\s(.*)$",
+			"match": "^(N)(\\d+)\\s+(-?\\d+)(?:\\s+(.*))?$",
 			"captures": {
 				"1": {
 					"name": "keyword.operator.analytical-engine"
@@ -51,7 +47,7 @@
 			}
 		},
 		{
-			"match": "^(N)(\\d+)\\s+(-?\\d+\\.\\d+)\\s(.*)$",
+			"match": "^(N)(\\d+)\\s+(-?\\d+\\.\\d+)(?:\\s+(.*))?$",
 			"captures": {
 				"1": {
 					"name": "keyword.operator.analytical-engine"
@@ -68,7 +64,7 @@
 			}
 		},
 		{
-			"match": "^(S|Z|L|C(F|B)\\??|\\<|\\>)(\\d+'?)\\s(.*)$",
+			"match": "^(S|Z|L|C(F|B)\\??|\\<|\\>)(\\d+'?)(?:\\s+(.*))?$",
 			"captures": {
 				"1": {
 					"name": "keyword.operator.analytical-engine"
@@ -150,6 +146,24 @@
 					"name": "constant.character.analytical-engine"
 				}
 			}
+		},
+		{
+			"match": "^(N)(\\d+)(?:\\s+(.*))?$",
+			"captures": {
+				"1": {
+					"name": "keyword.operator.analytical-engine"
+				},
+				"2": {
+					"name": "variable.parameter.analytical-engine"
+				},
+				"3": {
+					"name": "comment.line.analytical-engine"
+				}
+			}
+		},
+		{
+			"name": "comment.line.analytical-engine",
+			"match": "^(\\s+|\\.).*$"
 		}
 	]
 }

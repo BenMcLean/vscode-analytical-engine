@@ -2,15 +2,15 @@ import * as vscode from "vscode";
 import { AEDebugAdapter } from "./debugAdapter";
 import { PlotterPanel, EMPTY_SVG } from "./plotterPanel";
 import { ExecutionHooks, makeExecutionHooks } from "./engineHooks";
+import { registerLanguageFeatures } from "./languageFeatures";
+import {
+	getLibraryPath,
+	type LibraryRequest,
+	resolveExistingSystemLibraryUri,
+	resolveUserLibraryUri,
+} from "./libraryResolution";
 
 const LANGUAGE_ID = "analytical-engine";
-
-type LibraryRequest = {
-	kind: "system" | "user";
-	name: string;
-	path: string;
-	sourceUri?: string;
-};
 
 type LibraryResponse = { text: string; sourceName?: string; sourceUri?: string };
 
@@ -62,16 +62,18 @@ export function activate(context: vscode.ExtensionContext): void {
 			new AEDebugAdapterDescriptorFactory(context, plotter),
 		),
 	);
+
+	registerLanguageFeatures(context);
 }
 
 class AEDebugConfigurationProvider implements vscode.DebugConfigurationProvider {
 	provideDebugConfigurations(): vscode.DebugConfiguration[] {
-		const editor = vscode.window.activeTextEditor;
-		if (!editor || editor.document.languageId !== LANGUAGE_ID) {
+		const document = getRunnableDocument();
+		if (!document) {
 			return [];
 		}
 
-		return [this.createLaunchConfiguration(editor.document.uri)];
+		return [this.createLaunchConfiguration(document.uri)];
 	}
 
 	resolveDebugConfiguration(
@@ -79,17 +81,19 @@ class AEDebugConfigurationProvider implements vscode.DebugConfigurationProvider 
 		config: vscode.DebugConfiguration,
 	): vscode.DebugConfiguration {
 		if (!config.type && !config.request && !config.name) {
-			const editor = vscode.window.activeTextEditor;
-			if (editor && editor.document.languageId === LANGUAGE_ID) {
-				config = this.createLaunchConfiguration(editor.document.uri);
+			const document = getRunnableDocument();
+			if (document) {
+				config = this.createLaunchConfiguration(document.uri);
 			}
 		}
+
 		if (!config.program) {
-			const editor = vscode.window.activeTextEditor;
-			if (editor) {
-				config.program = editor.document.uri.toString();
+			const document = getRunnableDocument();
+			if (document) {
+				config.program = document.uri.toString();
 			}
 		}
+
 		return config;
 	}
 
@@ -99,7 +103,6 @@ class AEDebugConfigurationProvider implements vscode.DebugConfigurationProvider 
 			name: "Debug Analytical Engine Program",
 			request: "launch",
 			program: programUri.toString(),
-			stopOnEntry: false,
 		};
 	}
 }
@@ -155,13 +158,12 @@ async function runCurrentProgram(
 		const resolvedLibraryPath = getLibraryPath(request);
 		const uri =
 			request.kind === "system"
-				? vscode.Uri.joinPath(
+				? await resolveExistingSystemLibraryUri(
 						context.extensionUri,
-						"dist",
-						"analytical-engine",
+						request.sourceUri,
 						resolvedLibraryPath,
 					)
-				: resolveUserLibraryUri(request, resolvedLibraryPath);
+				: resolveUserLibraryUri(request.sourceUri ?? "", resolvedLibraryPath);
 		const contents = await vscode.workspace.fs.readFile(uri);
 		return {
 			text: new TextDecoder().decode(contents),
@@ -252,14 +254,18 @@ function getRunnableDocument(): vscode.TextDocument | undefined {
 		return undefined;
 	}
 
-	if (
-		activeDocument.languageId === LANGUAGE_ID ||
-		activeDocument.uri.path.toLowerCase().endsWith(".ae")
-	) {
+	if (isRunnableDocument(activeDocument)) {
 		return activeDocument;
 	}
 
 	return undefined;
+}
+
+function isRunnableDocument(document: vscode.TextDocument): boolean {
+	return (
+		document.languageId === LANGUAGE_ID ||
+		document.uri.path.toLowerCase().endsWith(".ae")
+	);
 }
 
 function getDocumentLabel(document: vscode.TextDocument): string {
@@ -269,47 +275,6 @@ function getDocumentLabel(document: vscode.TextDocument): string {
 
 	return vscode.workspace.asRelativePath(document.uri, false);
 }
-
-function getLibraryPath(request: LibraryRequest): string {
-	if (request.path) {
-		return request.path;
-	}
-
-	if (!request.name) {
-		throw new Error(
-			`Library request is missing both "path" and "name" (${JSON.stringify(request)}).`,
-		);
-	}
-
-	return request.kind === "system"
-		? `Library/${request.name}.ae`
-		: `${request.name}.ae`;
-}
-
-function resolveUserLibraryUri(
-	request: LibraryRequest,
-	resolvedLibraryPath: string,
-): vscode.Uri {
-	if (!request.sourceUri) {
-		throw new Error(
-			"Cannot resolve a relative include without a source URI.",
-		);
-	}
-
-	const importer = vscode.Uri.parse(request.sourceUri);
-	if (importer.scheme === "untitled") {
-		throw new Error(
-			"Relative user library includes require the program to be saved to disk first.",
-		);
-	}
-
-	const lastSlash = importer.path.lastIndexOf("/");
-	const parentPath =
-		lastSlash >= 0 ? importer.path.slice(0, lastSlash + 1) : "/";
-	const parent = importer.with({ path: parentPath });
-	return vscode.Uri.joinPath(parent, resolvedLibraryPath);
-}
-
 async function createSampleProgram(): Promise<void> {
 	const document = await vscode.workspace.openTextDocument({
 		language: LANGUAGE_ID,

@@ -1,25 +1,51 @@
 # Babbage Analytical Engine Assembly for Visual Studio Code
 
-[Babbage Analytical Engine](https://en.wikipedia.org/wiki/Analytical_Engine) [Assembly](http://fourmilab.ch/babbage/contents.html) support for Visual Studio Code is provided by this extension. The current scaffold is intentionally small, but it is pointed at the serious goal:
-
-- first-class `.ae` language recognition
-- a web-friendly extension architecture
-- a bundled TypeScript build using esbuild
-- automated `.vsix` packaging in GitHub Actions
+[Babbage Analytical Engine](https://en.wikipedia.org/wiki/Analytical_Engine) [Assembly](http://fourmilab.ch/babbage/contents.html) support for Visual Studio Code is provided by this extension with a full-featured development experience for writing, running, and debugging `.ae` programs. It brings together editing support, emulator-backed execution, interactive debugging, and plotter output in a package that works with both desktop and web-compatible extension hosts.
 
 ## About the Project
 
-**Q:** Is this serious computer science education software or a joke?  
+**Q:** Is this serious historical computer science education software or a joke?  
 **A:** [Yes](https://quoteinvestigator.com/2019/10/01/boy-girl/).
 
-## Current Features
+## Features
 
-- Registers the `analytical-engine` language for `.ae` files
-- Provides syntax highlighting ported from Alec Lownes' 2017 Atom package, [`language-analytical-engine`](https://github.com/cakenggt/language-analytical-engine)
-- Reuses the old Atom snippets as VS Code snippets
-- Adds `Analytical Engine: Run Current Program`
-- Runs programs through [Alec Lownes's analystical-engine](https://github.com/cakenggt/analytical-engine) based on [John Walker's web emulator](https://fourmilab.ch/babbage/emulator.html).
-- Resolves built-in and relative library includes through VS Code URIs so the extension can stay compatible with desktop and web hosts
+- `.ae` language registration with editor configuration for Analytical Engine source files
+- Syntax highlighting ported from Alec Lownes' Atom package, [`language-analytical-engine`](https://github.com/cakenggt/language-analytical-engine)
+- Snippet support adapted from the earlier Atom tooling
+- `Babbage Analytical Engine Assembly: New Sample Program` for quickly creating a runnable starter file
+- `Babbage Analytical Engine Assembly: Run Current Program` for one-command execution of the active program
+- Emulator-backed execution using [Alec Lownes's analytical-engine](https://github.com/cakenggt/analytical-engine), itself based on [John Walker's web emulator](https://fourmilab.ch/babbage/emulator.html)
+- Output capture for the Attendant Log and Printer in a dedicated VS Code output channel
+- Curve Drawing Apparatus / plotter output in a live webview panel
+- Plotter controls to reopen the panel, copy generated SVG, and save plots to disk
+- Dynamic debug configuration for `.ae` files
+- Launch-based debugging with step, continue, pause, stop, and `stopOnEntry`
+- Breakpoint support for Analytical Engine source files
+- Debug views for current execution state, including Mill and Store variables
+- Resolution of both bundled library cards and relative user includes through VS Code URIs
+- Diagnostics for malformed cards, suspicious indentation, decimal-place issues, and missing include targets
+- Hover help and document symbols for common card forms
+- Support for desktop and web extension hosts through separate Node and browser bundles
+- Optional bell sound integration for `B` cards on desktop hosts
+
+## Debugging and Running
+
+You can use the extension in two ways:
+
+- Run the active program directly with `Babbage Analytical Engine Assembly: Run Current Program`
+- Start a debug session with the `Analytical Engine` debugger or the generated launch configuration
+
+During debugging, the extension can stop on entry, honor source breakpoints, expose Mill and Store state through the Variables view, and surface plotter output when the program draws a curve.
+
+## Include Resolution
+
+The extension follows the emulator's current source-relative include rule.
+
+- `A include cards path/to/deck` resolves `path/to/deck.ae` relative to the file containing that include.
+- `A include from library cards for sqrt` first checks for `Library/sqrt.ae` relative to the including file.
+- If no project-local override exists, the extension falls back to the packaged standard library bundled with the extension.
+
+That behavior is intentional because it scales cleanly to large projects with nested folders and many `.ae` files, while still keeping the standard library available by default.
 
 ## Development
 
@@ -28,22 +54,20 @@ npm install
 npm run compile
 ```
 
-Recommended editor defaults are already included in `.vscode/settings.json` and `.prettierrc.json`, with tabs enforced via Prettier.
-
-## Packaging
+Useful scripts:
 
 ```bash
+npm run lint
+npm run test
 npm run vsix
 ```
 
-The release workflow builds and uploads a `.vsix` artifact when changes land on the `release` branch.
+## Packaging
 
 Because the emulator code is bundled into `dist/*/extension.js`, but its built-in `Library/*.ae` card files are runtime assets, the build also copies just those library files into `dist/analytical-engine/Library`. That avoids shipping the full dependency tree while keeping standard library includes working.
 
-## Near-Term Roadmap
+## Remaining Polish Before Publication
 
-- Diagnostics for invalid cards and unresolved includes
-- Hover help and card reference docs
-- Breakpoint-aware debugging on top of the emulator's `DebuggerSession`
-- Rich output views for the Attendant Log, Printer, and Curve Drawing Apparatus
-- Snippets, formatting, tasks, and project templates
+- Marketplace metadata and release/versioning polish
+- More automated coverage around debugger and execution scenarios
+- Documentation examples, screenshots, and usage walkthroughs

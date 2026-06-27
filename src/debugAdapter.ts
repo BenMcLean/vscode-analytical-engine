@@ -1,5 +1,10 @@
 import * as vscode from "vscode";
 import { ExecutionHooks, makeExecutionHooks } from "./engineHooks";
+import {
+	getLibraryPath,
+	resolveExistingSystemLibraryUri,
+	resolveUserLibraryUri,
+} from "./libraryResolution";
 
 // Minimal types matching analytical-engine's index.d.ts
 type LibraryRequest = {
@@ -139,11 +144,11 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 	private seq = 0;
 	private session: AEDebuggerSession | null = null;
 	private programUri: vscode.Uri | null = null;
-	private stopOnEntry = false;
 	private sourceBreakpoints = new Map<string, number[]>();
 	private lastBreakpointFired: NormalizedBreakpoint | null = null;
 	private _continueRunning = false;
 	private pendingContinue = false;
+	private outputsEmitted = false;
 
 	constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -186,8 +191,6 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 				if (!this.session) {
 					// launch is still loading — remember to continue once it's ready
 					this.pendingContinue = true;
-				} else if (this.stopOnEntry) {
-					this.sendEvent("stopped", { reason: "entry", threadId: 1 });
 				} else {
 					this.doContinue();
 				}
@@ -251,14 +254,14 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 	}
 
 	private async handleLaunch(req: DAPMessage): Promise<void> {
-		const args = req.arguments as { program?: string; stopOnEntry?: boolean } | undefined;
-		this.stopOnEntry = !!args?.stopOnEntry;
+		const args = req.arguments as { program?: string } | undefined;
 
 		if (!args?.program) {
 			throw new Error("No program specified in launch configuration.");
 		}
 
 		this.programUri = vscode.Uri.parse(args.program);
+		this.outputsEmitted = false;
 
 		const AE = await loadAEModule();
 		const session = new AE.DebuggerSession({
@@ -284,11 +287,7 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 
 		if (this.pendingContinue) {
 			this.pendingContinue = false;
-			if (this.stopOnEntry) {
-				this.sendEvent("stopped", { reason: "entry", threadId: 1 });
-			} else {
-				this.doContinue();
-			}
+			this.doContinue();
 		}
 	}
 
@@ -308,35 +307,31 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 	}
 
 	private async resolveLibrary(request: LibraryRequest): Promise<LibraryResponse> {
-		const resolvedPath =
-			request.path ||
-			(request.kind === "system"
-				? `Library/${request.name}.ae`
-				: `${request.name}.ae`);
+		const resolvedPath = getLibraryPath(request);
 
 		let uri: vscode.Uri;
 		if (request.kind === "system") {
-			uri = vscode.Uri.joinPath(
+			uri = await resolveExistingSystemLibraryUri(
 				this.context.extensionUri,
-				"dist",
-				"analytical-engine",
+				request.sourceUri,
 				resolvedPath,
 			);
 		} else {
 			if (!request.sourceUri) {
 				throw new Error("Cannot resolve relative include without a source URI.");
 			}
-			const importer = vscode.Uri.parse(request.sourceUri);
-			const lastSlash = importer.path.lastIndexOf("/");
-			const parentPath =
-				lastSlash >= 0 ? importer.path.slice(0, lastSlash + 1) : "/";
-			uri = vscode.Uri.joinPath(importer.with({ path: parentPath }), resolvedPath);
+			uri = resolveUserLibraryUri(request.sourceUri, resolvedPath);
 		}
 
 		const contents = await vscode.workspace.fs.readFile(uri);
 		return {
 			text: new TextDecoder().decode(contents),
-			sourceName: `${request.name} [Library]`,
+			sourceName:
+				request.kind === "system" && uri.path.endsWith(resolvedPath)
+					? uri.path.includes("/dist/analytical-engine/")
+						? `${request.name} [Library]`
+						: vscode.workspace.asRelativePath(uri, false)
+					: vscode.workspace.asRelativePath(uri, false),
 			sourceUri: uri.toString(),
 		};
 	}
@@ -446,6 +441,7 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 	private doContinue(): void {
 		this.doContinueAsync().catch((error) => {
 			const msg = error instanceof Error ? error.message : String(error);
+			this.emitProgramOutputs();
 			this.sendEvent("output", { category: "stderr", output: `[Engine error] ${msg}\n` });
 			this.sendEvent("terminated");
 		});
@@ -513,8 +509,10 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 			const stopReason = result.state.engine?.lastStopReason;
 
 			if (stopReason === "completed" || stopReason === "halt" || stopReason === "hcf") {
+				this.emitProgramOutputs();
 				this.sendEvent("terminated");
 			} else if (stopReason === "error") {
+				this.emitProgramOutputs();
 				this.sendEvent("stopped", { reason: "exception", threadId: 1 });
 			} else if (stopReason === "breakpoint") {
 				this.trackBreakpointFired(result.event);
@@ -551,8 +549,10 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 		const errorDetected = result.state.engine?.errorDetected;
 
 		if (stopReason === "completed" || stopReason === "halt" || stopReason === "hcf") {
+			this.emitProgramOutputs();
 			this.sendEvent("terminated");
 		} else if (stopReason === "error" || errorDetected) {
+			this.emitProgramOutputs();
 			this.sendEvent("stopped", { reason: "exception", threadId: 1 });
 		} else if (stopReason === "breakpoint") {
 			this.trackBreakpointFired(result.event);
@@ -615,6 +615,26 @@ export class AEDebugAdapter implements vscode.DebugAdapter {
 		if (svg && svg !== AEDebugAdapter.EMPTY_SVG) {
 			this._onDidUpdatePlot.fire(svg);
 		}
+	}
+
+	private emitProgramOutputs(): void {
+		if (this.outputsEmitted || !this.session) {
+			return;
+		}
+
+		this.outputsEmitted = true;
+		const outputs = this.session.getState().outputs;
+
+		this.sendEvent("output", { category: "console", output: "[Attendant Log]\n" });
+		this.sendEvent("output", {
+			category: "console",
+			output: `${outputs.attendantLog.trim() || "(empty)"}\n`,
+		});
+		this.sendEvent("output", { category: "console", output: "[Printer]\n" });
+		this.sendEvent("output", {
+			category: "console",
+			output: `${outputs.printer.trim() || "(empty)"}\n`,
+		});
 	}
 
 	dispose(): void {

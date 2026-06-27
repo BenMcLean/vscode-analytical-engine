@@ -45,7 +45,7 @@
 			{
 				"command": "analytical-engine.showPlotter",
 				"title": "Babbage Analytical Engine Assembly: Show Plotter",
-				"icon": "$(graph)"
+				"icon": "$(open-preview)"
 			}
 		],
 		"configuration": {
@@ -92,11 +92,6 @@
 		"menus": {
 			"editor/title/run": [
 				{
-					"command": "analytical-engine.runCurrentProgram",
-					"when": "resourceExtname == .ae",
-					"group": "navigation"
-				},
-				{
 					"command": "analytical-engine.showPlotter",
 					"when": "resourceExtname == .ae",
 					"group": "navigation"
@@ -122,11 +117,6 @@
 								"type": "string",
 								"description": "Path to the .ae file to debug. Defaults to the active file.",
 								"default": "${file}"
-							},
-							"stopOnEntry": {
-								"type": "boolean",
-								"description": "Pause before executing the first card.",
-								"default": true
 							}
 						}
 					}
@@ -136,8 +126,7 @@
 						"type": "analytical-engine",
 						"request": "launch",
 						"name": "Debug Analytical Engine Program",
-						"program": "${file}",
-						"stopOnEntry": false
+						"program": "${file}"
 					}
 				],
 				"configurationSnippets": [
@@ -148,8 +137,7 @@
 							"type": "analytical-engine",
 							"request": "launch",
 							"name": "${1:Debug Analytical Engine Program}",
-							"program": "^\"\\${file}\"",
-							"stopOnEntry": false
+							"program": "^\"\\${file}\""
 						}
 					}
 				]
@@ -174,7 +162,7 @@
 		"vsix": "vsce package --out analytical-engine.vsix"
 	},
 	"dependencies": {
-		"analytical-engine": "github:BenMcLean/analytical-engine#3eacb153134945aca76acd3b08f102e67873846a"
+		"analytical-engine": "github:BenMcLean/analytical-engine#0bfbc8822563fca8c325036a7aa3156ceecb8a4c"
 	},
 	"devDependencies": {
 		"@types/mocha": "^10.0.10",
