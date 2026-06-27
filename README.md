@@ -19,7 +19,7 @@
 - Curve Drawing Apparatus / plotter output in a live webview panel
 - Plotter controls to reopen the panel, copy generated SVG, and save plots to disk
 - Dynamic debug configuration for `.ae` files
-- Launch-based debugging with step, continue, pause, stop, and `stopOnEntry`
+- Launch-based debugging with step, continue, pause and stop
 - Breakpoint support for Analytical Engine source files
 - Debug views for current execution state, including Mill and Store variables
 - Resolution of both bundled library cards and relative user includes through VS Code URIs
@@ -66,8 +66,17 @@ npm run vsix
 
 Because the emulator code is bundled into `dist/*/extension.js`, but its built-in `Library/*.ae` card files are runtime assets, the build also copies just those library files into `dist/analytical-engine/Library`. That avoids shipping the full dependency tree while keeping standard library includes working.
 
-## Remaining Polish Before Publication
+## Publication
 
-- Marketplace metadata and release/versioning polish
+The extension metadata is set up for both the Visual Studio Marketplace and Open VSX.
+
+- Push to `release` to package a VSIX and publish automatically when the corresponding GitHub Actions secrets are present.
+- Run the workflow manually from `master` or another branch to package a VSIX artifact without publishing by leaving the `publish` input unchecked.
+
+- `VSCE_PAT` for the Visual Studio Marketplace
+- `OVSX_TOKEN` for Open VSX
+
+Remaining work before a public launch:
+
 - More automated coverage around debugger and execution scenarios
 - Documentation examples, screenshots, and usage walkthroughs

@@ -1,14 +1,22 @@
-name: Package VSIX
+name: Package And Publish VSIX
 
 on:
   push:
     branches:
       - release
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish to marketplaces after packaging
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   vsix:
     runs-on: ubuntu-latest
+    env:
+      SHOULD_PUBLISH: ${{ github.event_name == 'push' || inputs.publish }}
     steps:
       - uses: actions/checkout@v4
 
@@ -31,3 +39,17 @@ jobs:
         with:
           name: analytical-engine-vsix
           path: analytical-engine.vsix
+
+      - name: Publish to marketplaces
+        if: ${{ env.SHOULD_PUBLISH == 'true' }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          OVSX_TOKEN: ${{ secrets.OVSX_TOKEN }}
+        run: |
+          if [ -n "$VSCE_PAT" ]; then
+            npx @vscode/vsce publish --packagePath analytical-engine.vsix -p "$VSCE_PAT"
+          fi
+
+          if [ -n "$OVSX_TOKEN" ]; then
+            npx ovsx publish analytical-engine.vsix -p "$OVSX_TOKEN"
+          fi

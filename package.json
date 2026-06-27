@@ -5,11 +5,19 @@
 	"version": "0.0.1",
 	"publisher": "benmclean",
 	"icon": "icon.png",
+	"homepage": "https://github.com/benmclean/vscode-analytical-engine",
+	"bugs": {
+		"url": "https://github.com/benmclean/vscode-analytical-engine/issues"
+	},
 	"license": "MIT",
-	"private": true,
+	"pricing": "Free",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/BenMcLean/vscode-analytical-engine.git"
+		"url": "https://github.com/benmclean/vscode-analytical-engine.git"
+	},
+	"galleryBanner": {
+		"color": "#e8dfbf",
+		"theme": "light"
 	},
 	"engines": {
 		"vscode": "^1.125.0"
@@ -17,19 +25,15 @@
 	"categories": [
 		"Programming Languages",
 		"Debuggers",
-		"Other"
+		"Linters",
+		"Education"
 	],
 	"keywords": [
 		"analytical-engine",
 		"babbage",
-		"assembly",
-		"victorian-computing"
+		"assembly"
 	],
 	"activationEvents": [
-		"onLanguage:analytical-engine",
-		"onCommand:analytical-engine.runCurrentProgram",
-		"onCommand:analytical-engine.debugCurrentProgram",
-		"onCommand:analytical-engine.newProgram",
 		"onDebug"
 	],
 	"main": "./dist/node/extension.js",
@@ -177,7 +181,9 @@
 		"test": "vscode-test",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"vsix": "vsce package --out analytical-engine.vsix"
+		"vsix": "vsce package --out analytical-engine.vsix",
+		"publish:vsce": "vsce publish",
+		"publish:ovsx": "npx ovsx publish"
 	},
 	"dependencies": {
 		"analytical-engine": "github:BenMcLean/analytical-engine#0bfbc8822563fca8c325036a7aa3156ceecb8a4c"
