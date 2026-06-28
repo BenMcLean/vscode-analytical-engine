@@ -280,7 +280,9 @@ function isAcceptedByEngine(line: string): boolean {
 			return !Number.isNaN(column) && column >= 0;
 		}
 		case "N": {
-			const match = card.match(/^N(\d+)\s+([\d+\-\u2212]+)(?:\s+.*)?$/i);
+			const match = card.match(
+				/^N(\d+)\s+([+\-\u2212]?(?:\d+(?:\.\d*)?|\.\d+))(?:\s+.*)?$/i,
+			);
 			if (!match) {
 				return false;
 			}
@@ -289,13 +291,7 @@ function isAcceptedByEngine(line: string): boolean {
 				return false;
 			}
 
-			const valueText = match[2].replace(/^\+/, "").replace(/^\u2212/, "-");
-			try {
-				const value = BigInt(valueText);
-				return value > -(10n ** 50n) && value < 10n ** 50n;
-			} catch {
-				return false;
-			}
+			return true;
 		}
 		case "C":
 			return !(

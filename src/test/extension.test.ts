@@ -172,6 +172,23 @@ suite("Extension Test Suite", () => {
 		assert.strictEqual(diagnostics.length, 0);
 	});
 
+	test("Analytical Engine diagnostics allow decimal number cards used by real programs", async () => {
+		const document = await vscode.workspace.openTextDocument({
+			language: "analytical-engine",
+			content:
+				"N100 -2.20              . x start\n" +
+				"N102 0.025              . x step\n" +
+				"N109 2.0\n" +
+				"N112 0.615384615384615  . x plot scale\n" +
+				"N115 0.010              . half-height of sample tick mark\n",
+		});
+		await vscode.window.showTextDocument(document);
+
+		const diagnostics = await waitForDiagnosticCount(document.uri, 0);
+
+		assert.strictEqual(diagnostics.length, 0);
+	});
+
 	test("Analytical Engine diagnostics catch relative decimal settings without a prior absolute setting", async () => {
 		const document = await vscode.workspace.openTextDocument({
 			language: "analytical-engine",
