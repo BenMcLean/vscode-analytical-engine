@@ -55,26 +55,17 @@ The bundled JavaScript emulator strips comment lines before execution. This diff
 
 As a result, some original Walker examples which use literal combinatorial jump distances may not run verbatim in this extension.
 
-## Development
-
-```bash
-npm install
-npm run compile
-```
-
-Useful scripts:
-
-```bash
-npm run lint
-npm run test
-npm run vsix
-```
-
 ## About the Project
 
 **Q:** Is this serious historical computer science education software or a joke?
 
 **A:** [Yes](https://quoteinvestigator.com/2019/10/01/boy-girl/).
+
+----
+
+**Q:** How to install?
+
+**A:** The extension is distributed through [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=benmclean.vscode-analytical-engine) and [Open VSX](https://open-vsx.org/extension/benmclean/vscode-analytical-engine).
 
 ----
 
