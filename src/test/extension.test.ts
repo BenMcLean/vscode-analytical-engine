@@ -155,6 +155,18 @@ suite("Extension Test Suite", () => {
 		assert.strictEqual(diagnostics.length, 0);
 	});
 
+	test("Analytical Engine diagnostics allow emulator trace cards used by Walker examples", async () => {
+		const document = await vscode.workspace.openTextDocument({
+			language: "analytical-engine",
+			content: "T1\nT0\n",
+		});
+		await vscode.window.showTextDocument(document);
+
+		const diagnostics = await waitForDiagnosticCount(document.uri, 0);
+
+		assert.strictEqual(diagnostics.length, 0);
+	});
+
 	test("Analytical Engine diagnostics allow valid attendant write cards", async () => {
 		const document = await vscode.workspace.openTextDocument({
 			language: "analytical-engine",

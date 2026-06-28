@@ -91,6 +91,12 @@ const CARD_HELP_ENTRIES: CardHelpEntry[] = [
 		regex: /^H\b/i,
 	},
 	{
+		title: "Trace card",
+		syntax: "T0 | T1",
+		summary: "Disables or enables emulator trace output.",
+		regex: /^T[01]\b/i,
+	},
+	{
 		title: "Curve draw card",
 		syntax: "D+ | D- | DX | DY",
 		summary: "Moves the Curve Drawing Apparatus in the requested direction.",

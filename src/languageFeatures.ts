@@ -99,6 +99,12 @@ const CARD_HELP_ENTRIES: CardHelpEntry[] = [
 		symbolKind: vscode.SymbolKind.Event,
 	},
 	{
+		title: "Trace card",
+		syntax: "T0 | T1",
+		summary: "Disables or enables emulator trace output.",
+		regex: /^T[01]$/i,
+	},
+	{
 		title: "Curve draw card",
 		syntax: "D+ | D- | DX | DY",
 		summary: "Moves the Curve Drawing Apparatus in the requested direction.",
@@ -190,12 +196,12 @@ const CARD_HELP_ENTRIES: CardHelpEntry[] = [
 
 const CONTROL_CARD_PATTERN = /^(\(\??|\{\??|\}\{|[)}])$/;
 const POSSIBLE_CARD_PREFIX =
-	/^(A|B|CB\??|CF\??|D\+|D-|DC|DX|DY|H|L\d*'?|N\d*|P|S\d*'?|Z\d*'?|[+\-*/<>{()}]|\u2212|\u00d7|\u00f7)$/i;
+	/^(A|B|CB\??|CF\??|D\+|D-|DC|DX|DY|H|L\d*'?|N\d*|P|S\d*'?|T[01]?|Z\d*'?|[+\-*/<>{()}]|\u2212|\u00d7|\u00f7)$/i;
 const CARD_LIKE_TOKEN_PATTERN =
-	/^(A|B|C|D|H|L|N|P|S|Z|[+\-*/<>{()}]|\u2212|\u00d7|\u00f7)/i;
-const VALID_LINE_START_PATTERN = /^[ABCDHLNPSZ+\-*/<>{()\u2212\u00d7\u00f7]/i;
+	/^(A|B|C|D|H|L|N|P|S|T|Z|[+\-*/<>{()}]|\u2212|\u00d7|\u00f7)/i;
+const VALID_LINE_START_PATTERN = /^[ABCDHLNPSTZ+\-*/<>{()\u2212\u00d7\u00f7]/i;
 const INDENTED_CARD_PREFIX =
-	/^\s+(A|B|C|D\+|D-|DC|DX|DY|H|L\d*'?|N\d*|P|S\d*'?|Z\d*'?|[+\-*/<>{()}])/i;
+	/^\s+(A|B|C|D\+|D-|DC|DX|DY|H|L\d*'?|N\d*|P|S\d*'?|T[01]?|Z\d*'?|[+\-*/<>{()}])/i;
 const VALID_LIBRARY_NAME = /^[abcdefghijklmnopqrstuvwxyz\-_0123456789]+$/;
 
 function trimInstructionLine(line: string): string {
@@ -260,6 +266,8 @@ function isAcceptedByEngine(line: string): boolean {
 		case "P":
 		case "H":
 			return true;
+		case "T":
+			return /^T[01]$/i.test(card);
 		case "<":
 		case ">": {
 			const body = card.slice(1).trimEnd();

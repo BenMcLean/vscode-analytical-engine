@@ -49,6 +49,12 @@ The extension follows the emulator's current source-relative include rule.
 
 That behavior is intentional because it scales cleanly to large projects with nested folders and many `.ae` files, while still keeping the standard library available by default.
 
+## Known Issues
+
+The bundled JavaScript emulator strips comment lines before execution. This differs from John Walker's original browser emulator, which could retain comments in the mounted card chain.
+
+As a result, some original Walker examples which use literal combinatorial jump distances may not run verbatim in this extension.
+
 ## Development
 
 ```bash
@@ -66,10 +72,18 @@ npm run vsix
 
 ## About the Project
 
-- **Q:** Is this serious historical computer science education software or a joke?
-- **A:** [Yes](https://quoteinvestigator.com/2019/10/01/boy-girl/).
+**Q:** Is this serious historical computer science education software or a joke?
+
+**A:** [Yes](https://quoteinvestigator.com/2019/10/01/boy-girl/).
 
 ----
 
-- **Q:** Is the code in this extension just a bunch of hastily thrown together heavily vibe coded LLM slop?
-- **A:** Absolutely 100% "Owner of a Lonely Heart" Yes and I didn't even scrutinize its work very hard. It wasn't single prompt or anything silly like that but I did sit back and let the model write the code while I described what I wanted feature by feature. I was far more interested in a functional end result based on manual testing than I was in making sure every detail was correct on this. I would not recommend working this way when building code on which anybody's life could depend, but this project was just taking an existing emulator somebody else wrote and adding a little glue and polish to make it run inside Visual Studio Code. LLMs made it possible to throw this together in just a few days.
+**Q:** What level of effort was involved in making this?
+
+**A:** I forked an existing emulator somebody else wrote and just added a little glue and polish to make it run inside Visual Studio Code.
+
+----
+
+**Q:** Is the code in this extension just a bunch of hastily thrown together heavily vibe coded LLM slop?
+
+**A:** Absolutely 100% "Owner of a Lonely Heart" Yes and I didn't even scrutinize its work very hard. It wasn't single prompt or anything silly like that but I did sit back and let the model write the code while I described what I wanted feature by feature. I was far more interested in a functional end result based on manual testing than I was in making sure every detail was correct on this. I would not recommend working this way when building code on which anybody's life could depend, but LLMs made it possible to throw this together in just a few days.
