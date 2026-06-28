@@ -2,7 +2,7 @@
 	"name": "vscode-analytical-engine",
 	"displayName": "Babbage Analytical Engine Assembly",
 	"description": "Visual Studio Code tooling for Babbage Analytical Engine assembly.",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"publisher": "benmclean",
 	"icon": "icon.png",
 	"homepage": "https://github.com/benmclean/vscode-analytical-engine",

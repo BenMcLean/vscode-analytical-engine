@@ -1,11 +1,13 @@
 # Babbage Analytical Engine Assembly for Visual Studio Code
 
-[Babbage Analytical Engine](https://en.wikipedia.org/wiki/Analytical_Engine) [Assembly](http://fourmilab.ch/babbage/contents.html) support for Visual Studio Code is provided by this extension with a full-featured development experience for writing, running, and debugging `.ae` programs. It brings together editing support, emulator-backed execution, interactive debugging, and plotter output in a package that works with both desktop and web-compatible extension hosts.
+[Babbage Analytical Engine](https://en.wikipedia.org/wiki/Analytical_Engine) [Assembly](https://fourmilab.ch/babbage/contents.html) support for Visual Studio Code is provided by this extension. It brings together a fully modern (2026) development experience for writing, running, and debugging `.ae` programs with editing support, emulator-backed execution, interactive debugging and plotter output in a package that works with both desktop and web-compatible extension hosts.
 
-## About the Project
+This extension is for the Analytical Engine assembly language documented by John Walker and should run his example programs verbatim. It is not a new dialect, alternate syntax or separate language design. If you want to know how to program the machine, see the original programming references:
 
-**Q:** Is this serious historical computer science education software or a joke?  
-**A:** [Yes](https://quoteinvestigator.com/2019/10/01/boy-girl/).
+- John Walker's [Analytical Engine contents](https://fourmilab.ch/babbage/contents.html)
+- Esolang's [Analytical Engine Programming Cards](https://esolangs.org/wiki/Analytical_Engine_Programming_Cards)
+
+[mandelbrot.ae](https://gist.github.com/BenMcLean/57bc13db1337a55429c856231b72f92f) is recommended as an additional test program.
 
 ## Features
 
@@ -14,7 +16,7 @@
 - Snippet support adapted from the earlier Atom tooling
 - `Babbage Analytical Engine Assembly: New Sample Program` for quickly creating a runnable starter file
 - `Babbage Analytical Engine Assembly: Run Current Program` for one-command execution of the active program
-- Emulator-backed execution using [Alec Lownes's analytical-engine](https://github.com/cakenggt/analytical-engine), itself based on [John Walker's web emulator](https://fourmilab.ch/babbage/emulator.html)
+- Emulator-backed execution using a [custom fork](https://github.com/benmclean/analytical-engine) of [Alec Lownes's analytical-engine](https://github.com/cakenggt/analytical-engine), itself based on [John Walker's web emulator](https://fourmilab.ch/babbage/emulator.html)
 - Output capture for the Attendant Log and Printer in a dedicated VS Code output channel
 - Curve Drawing Apparatus / plotter output in a live webview panel
 - Plotter controls to reopen the panel, copy generated SVG, and save plots to disk
@@ -62,21 +64,12 @@ npm run test
 npm run vsix
 ```
 
-## Packaging
+## About the Project
 
-Because the emulator code is bundled into `dist/*/extension.js`, but its built-in `Library/*.ae` card files are runtime assets, the build also copies just those library files into `dist/analytical-engine/Library`. That avoids shipping the full dependency tree while keeping standard library includes working.
+- **Q:** Is this serious historical computer science education software or a joke?
+- **A:** [Yes](https://quoteinvestigator.com/2019/10/01/boy-girl/).
 
-## Publication
+----
 
-The extension metadata is set up for both the Visual Studio Marketplace and Open VSX.
-
-- Push to `release` to package a VSIX and publish automatically when the corresponding GitHub Actions secrets are present.
-- Run the workflow manually from `master` or another branch to package a VSIX artifact without publishing by leaving the `publish` input unchecked.
-
-- `VSCE_PAT` for the Visual Studio Marketplace
-- `OVSX_TOKEN` for Open VSX
-
-Remaining work before a public launch:
-
-- More automated coverage around debugger and execution scenarios
-- Documentation examples, screenshots, and usage walkthroughs
+- **Q:** Is the code in this extension just a bunch of hastily thrown together heavily vibe coded LLM slop?
+- **A:** Absolutely 100% "Owner of a Lonely Heart" Yes and I didn't even scrutinize its work very hard. It wasn't single prompt or anything silly like that but I did sit back and let the model write the code while I described what I wanted feature by feature. I was far more interested in a functional end result based on manual testing than I was in making sure every detail was correct on this. I would not recommend working this way when building code on which anybody's life could depend, but this project was just taking an existing emulator somebody else wrote and adding a little glue and polish to make it run inside Visual Studio Code. LLMs made it possible to throw this together in just a few days.

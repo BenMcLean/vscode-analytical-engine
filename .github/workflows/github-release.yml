@@ -1,0 +1,76 @@
+name: GitHub Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG_NAME: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build extension
+        run: npm run package
+
+      - name: Package VSIX
+        run: npx @vscode/vsce package --out analytical-engine.vsix
+
+      - name: Prepare release notes from changelog
+        run: |
+          node <<'EOF'
+          const fs = require("fs");
+
+          const tagName = process.env.TAG_NAME;
+          const version = tagName.startsWith("v") ? tagName.slice(1) : tagName;
+          const changelog = fs.readFileSync("CHANGELOG.md", "utf8");
+          const lines = changelog.split(/\r?\n/);
+
+          let start = -1;
+          for (let i = 0; i < lines.length; i += 1) {
+            const line = lines[i].trim();
+            if (line === `## ${version}` || line === `## ${tagName}`) {
+              start = i + 1;
+              break;
+            }
+          }
+
+          let notes = "";
+          if (start !== -1) {
+            const body = [];
+            for (let i = start; i < lines.length; i += 1) {
+              if (lines[i].startsWith("## ")) {
+                break;
+              }
+              body.push(lines[i]);
+            }
+            notes = body.join("\n").trim();
+          }
+
+          if (!notes) {
+            notes = `Release ${tagName}`;
+          }
+
+          fs.writeFileSync("release-notes.md", notes + "\n");
+          EOF
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          name: ${{ env.TAG_NAME }}
+          body_path: release-notes.md
+          files: analytical-engine.vsix

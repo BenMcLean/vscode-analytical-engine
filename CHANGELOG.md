@@ -1,8 +1,11 @@
 # Changelog
 
-## 0.0.1
+## 0.1.0
 
-- Initial extension scaffold
-- Added `.ae` language registration
-- Added a first run command backed by the Analytical Engine emulator
-- Added esbuild, ESLint, Prettier, and GitHub Actions wiring
+- First public release
+- Added `.ae` language registration, syntax highlighting, and snippets for Analytical Engine source files
+- Added emulator-backed run and debug support for John Walker / Fourmilab Analytical Engine programs
+- Added breakpoints, Mill and Store debug views, and plotter output support
+- Added diagnostics, hover help, and document symbols for valid card forms
+- Added support for bundled library cards plus source-relative user includes
+- Added desktop and web extension bundles

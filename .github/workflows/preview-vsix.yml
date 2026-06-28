@@ -1,12 +1,10 @@
-name: Publish VSIX
+name: Preview VSIX
 
 on:
-  push:
-    branches:
-      - release
+  workflow_dispatch:
 
 jobs:
-  publish:
+  preview:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -30,16 +28,3 @@ jobs:
         with:
           name: analytical-engine-vsix
           path: analytical-engine.vsix
-
-      - name: Publish to marketplaces
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-          OVSX_TOKEN: ${{ secrets.OVSX_TOKEN }}
-        run: |
-          if [ -n "$VSCE_PAT" ]; then
-            npx @vscode/vsce publish --packagePath analytical-engine.vsix -p "$VSCE_PAT"
-          fi
-
-          if [ -n "$OVSX_TOKEN" ]; then
-            npx ovsx publish analytical-engine.vsix -p "$OVSX_TOKEN"
-          fi
