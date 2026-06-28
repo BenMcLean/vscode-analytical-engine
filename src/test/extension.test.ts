@@ -4,6 +4,14 @@ import * as vscode from "vscode";
 suite("Extension Test Suite", () => {
 	vscode.window.showInformationMessage("Start all tests.");
 
+	suiteSetup(async () => {
+		const extension = vscode.extensions.getExtension(
+			"benmclean.vscode-analytical-engine",
+		);
+		assert.ok(extension);
+		await extension.activate();
+	});
+
 	async function waitForDiagnosticCount(
 		uri: vscode.Uri,
 		expectedCount: number,
@@ -58,7 +66,10 @@ suite("Extension Test Suite", () => {
 		const diagnostics = await waitForDiagnosticCount(document.uri, 4);
 
 		assert.strictEqual(diagnostics.length, 4);
-		assert.match(diagnostics[0].message, /Unrecognized or malformed Analytical Engine card/);
+		assert.match(
+			diagnostics[0].message,
+			/(Unrecognized or malformed Analytical Engine card|Combinatorial cards must look like)/,
+		);
 		assert.strictEqual(diagnostics[0].range.start.line, 0);
 		assert.match(diagnostics[1].message, /Unrecognized or malformed Analytical Engine card/);
 		assert.strictEqual(diagnostics[1].range.start.line, 1);
@@ -66,6 +77,22 @@ suite("Extension Test Suite", () => {
 		assert.strictEqual(diagnostics[2].range.start.line, 2);
 		assert.match(diagnostics[3].message, /Unrecognized or malformed Analytical Engine card/);
 		assert.strictEqual(diagnostics[3].range.start.line, 3);
+	});
+
+	test("Analytical Engine diagnostics reject junk inserted into variable and number cards", async () => {
+		const document = await vscode.workspace.openTextDocument({
+			language: "analytical-engine",
+			content: "Nq004 0\nL0a04\n",
+		});
+		await vscode.window.showTextDocument(document);
+
+		const diagnostics = await waitForDiagnosticCount(document.uri, 2);
+
+		assert.strictEqual(diagnostics.length, 2);
+		assert.match(diagnostics[0].message, /Unrecognized or malformed Analytical Engine card/);
+		assert.strictEqual(diagnostics[0].range.start.line, 0);
+		assert.match(diagnostics[1].message, /Unrecognized or malformed Analytical Engine card/);
+		assert.strictEqual(diagnostics[1].range.start.line, 1);
 	});
 
 	test("Analytical Engine diagnostics do not flag indented card-like lines as problems", async () => {

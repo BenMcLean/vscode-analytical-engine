@@ -272,15 +272,15 @@ function isAcceptedByEngine(line: string): boolean {
 		case "L":
 		case "S":
 		case "Z": {
-			const match = card.slice(1).match(/\d+/);
+			const match = card.match(/^[LSZ](\d+)'?(?:\s+.*)?$/i);
 			if (!match) {
 				return false;
 			}
-			const column = Number.parseInt(match[0], 10);
+			const column = Number.parseInt(match[1], 10);
 			return !Number.isNaN(column) && column >= 0;
 		}
 		case "N": {
-			const match = card.slice(1).match(/(\d+)\s+([\d\+\-\u2212]+)/);
+			const match = card.match(/^N(\d+)\s+([\d+\-\u2212]+)(?:\s+.*)?$/i);
 			if (!match) {
 				return false;
 			}
